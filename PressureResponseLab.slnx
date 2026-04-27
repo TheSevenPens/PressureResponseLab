@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SevenLib/SevenLib.csproj" />
+  <Project Path="PressureResponseLab/PressureResponseLab.csproj" />
+</Solution>
