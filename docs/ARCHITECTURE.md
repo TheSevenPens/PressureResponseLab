@@ -8,7 +8,9 @@
 PressureResponseLab.slnx          # SLNX solution
 ├── SevenLib/                     # Class library — math, geometry, stylus types
 ├── PressureResponseLab/          # WPF WinExe — application
-└── lib/PenSession.Managed/       # Vendored binary release of PenSession.Managed
+├── lib/PenSession.Managed/       # Vendored binary release of PenSession.Managed
+├── docs/                         # Repo documentation (this file lives here)
+└── .github/workflows/            # CI — tag-driven release workflow
 ```
 
 ## Projects
@@ -146,6 +148,26 @@ OxyPlot `PlotView` bound in XAML. `MainWindow.updatedata()` rebuilds the model o
 2. **`Window.Loaded`** — `StartPenSession`: gets HWND, calls `IPenSession.Start(hwnd)`, starts the `DispatcherTimer`.
 3. **User actions** — record/clear/export/load, scale start/stop. Keyboard shortcuts handled in `Window_PreviewKeyDown` (Ctrl+R/L/C/A/S/T).
 4. **`Window.Closing`** — `StopPenSession` (stop timer, stop session), `StopScaleSession` (cancel CTS), close+dispose serial port, dispose CTS.
+
+## Release process
+
+Releases are cut by pushing a `v*` tag. The workflow at `.github/workflows/release.yml` triggers on any tag matching that pattern and does the following on a `windows-latest` runner:
+
+1. Checkout + `actions/setup-dotnet@v4` (`10.0.x`).
+2. Parse the tag — `v0.1.0` becomes version `0.1.0`.
+3. `dotnet restore PressureResponseLab.slnx`.
+4. `dotnet publish PressureResponseLab/PressureResponseLab.csproj` — `Release`, `win-x64`, `--self-contained true`, `-p:PublishSingleFile=true`, `-p:IncludeNativeLibrariesForSelfExtract=true`, `-p:Version={version}`. End users don't need .NET 10 installed; trade-off is a ~70 MB zip.
+5. `Compress-Archive` → `PressureResponseLab-{version}-win-x64.zip`.
+6. `gh release create v{version} <zip> --title "PressureResponseLab {version}" --generate-notes` — release notes are auto-built from commits since the previous tag.
+
+To cut a release:
+
+```
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+There's no separate CI build for `main` — the release workflow is the only automated build. PR/branch validation runs locally via `dotnet build`.
 
 ## Why this layout
 
